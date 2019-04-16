@@ -1,0 +1,123 @@
+작업 1: Installing Docker in CentOS
+1. Install required packages. yum-utils provides the yum-config-manager utility, and device-mapper-persistent-data and lvm2 are required by the devicemapper storage driver.
+# yum install -y yum-utils  device-mapper-persistent-data  lvm2
+
+2. Use the following command to set up the stable repository.
+# yum-config-manager --add-repo  https://download.docker.com/linux/centos/docker-ce.repo
+
+3. Install the latest version of Docker CE and containerd, or go to the next step to install a specific version:
+# yum install docker-ce docker-ce-cli containerd.io –y
+
+
+작업 2: 서비스 정보 확인
+1. Docker 서비스를 시작하고 시스템 부팅 시에 시작하도록 구성한다.
+# systemctl enable docker && systemctl start docker 
+
+2. 도커 실행 상태를 확인
+$ ps -ef | grep docker
+
+클라이언트 docker : /usr/bin/docker
+	- 컨테이너나 이미지를 다루는 명령어
+server docker : /usr/bin/dockerd
+	- 도커 엔진 프로세스
+	- 컨테이너를 생성하고, 실행하며 이미지를 관리
+
+3. 데몬을 시작하면 기본 config 디렉토리(/etc/docker)가 생성된다.
+# ls /etc/docker/
+
+4. classroom 안에서 클라이언트들이 TLS 인증 없이 docker 데몬에 access할 수 있도록 daemon.json 파일을 수정한다.
+# dockerd --help
+# cat << END > /etc/docker/daemon.json
+{
+  "insecure-registries": ["10.100.0.0/24"]
+}
+END
+5. 방화벽 구성
+# systemctl stop firewalld && systemctl disable firewalld
+
+
+6. 서비스 데몬 실행
+#  systemctl restart docker
+
+
+7. Docker 호스트 인스턴스에 대한 버전 정보를 살펴보자.
+# docker version 
+
+8. Info 서브 명령을 사용하여 현재 구성 정보를 살펴보자.
+# docker info 
+Containers: 0
+ Running: 0
+ Paused: 0
+ Stopped: 0
+Images: 0
+Server Version: 18.06.0-ce
+Storage Driver: overlay2			## union, overlay 드라이버로 layerdFS을 관리
+ Backing Filesystem: xfs
+ Supports d_type: true
+ Native Overlay Diff: true
+Logging Driver: json-file			## 로그 관리 드라이버
+Cgroup Driver: cgroupfs			## cgroup 관리 드라이버
+Plugins:
+ Volume: local
+ Network: bridge host macvlan null overlay
+ Log: awslogs fluentd gcplogs gelf journald json-file logentries splunk syslog
+Swarm: inactive				## 도커 클러스터 관리 툴
+Runtimes: runc			
+Default Runtime: runc
+Init Binary: docker-init
+containerd version: d64c661f1d51c48782c9cec8fda7604785f93587
+runc version: 69663f0bd4b60df09991c08812a60108003fa340
+init version: fec3683
+Security Options:
+ seccomp
+  Profile: default
+Kernel Version: 3.10.0-693.el7.x86_64
+Operating System: CentOS Linux 7 (Core)
+OSType: linux
+Architecture: x86_64
+CPUs: 2
+Total Memory: 1.796GiB
+Name: docker104.example.com
+ID: MF27:24UP:KAUU:KNSU:PBAY:JYIH:LZ77:MH6O:PSK3:L7VH:WKTW:HXYT
+Docker Root Dir: /var/lib/docker
+Debug Mode (client): false
+Debug Mode (server): false
+Registry: https://index.docker.io/v1/			## docker hub site. default registry
+Labels:
+Experimental: false
+Insecure Registries:
+ 10.100.0.0/24
+ 127.0.0.0/8
+Live Restore Enabled: false
+
+
+9. Dockerd가 시작할 때 생성한 디렉터리 계층구조를 살펴보자. 
+# tree /var/lib/docker 
+/var/lib/docker/
+├── builder
+│   └── fscache.db
+├── buildkit
+│   ├── cache.db
+│   ├── content
+│   │   └── ingest
+│   ├── executor
+│   ├── metadata.db
+│   └── snapshots.db
+├── containerd
+│   └── daemon
+│       ├── io.containerd.content.v1.content
+│       │   └── ingest
+│       ├── io.containerd.metadata.v1.bolt
+│       │   └── meta.db
+│       ├── io.containerd.runtime.v1.linux
+│       ├── io.containerd.snapshotter.v1.btrfs
+│       ├── io.containerd.snapshotter.v1.native
+│       │   └── snapshots
+│       ├── io.containerd.snapshotter.v1.overlayfs
+│       │   └── snapshots
+│       └── tmpmounts
+├── containers
+├── image
+│   └── overlay2
+│       ├── distribution
+...
