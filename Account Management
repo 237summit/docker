@@ -1,0 +1,39 @@
+사용자 계정에 권한 부여
+1. admin라는 이름의 계정을 생성하거나 계정 정보를 확인한다.
+# useradd admin -m -s /bin/bash 
+# passwd admin		## work를 사용
+or
+# id admin
+# su - admin
+admin$ docker version
+admin$ exit
+
+admin 사용자가 데몬 컨트롤 소켓에 액세스 권한을 갖도록 한다.
+# ls -l /var/run/docker.sock 
+
+
+2. 사용자를 docker 그룹에 추가한다.
+# usermod -aG docker admin 
+# id admin 
+
+3. 이제 admin 사용자는 소켓에 액세스할 수 있으므로 root계정은 로그아웃하고 admin 계정으로 로그인하면 docker에 대한 작업을 수행할 수 있다.
+# su - admin
+admin$ docker version
+Client:
+ Version:           18.09.4
+ API version:       1.39
+ Go version:        go1.10.8
+ Git commit:        d14af54266
+ Built:             Wed Mar 27 18:34:51 2019
+ OS/Arch:           linux/amd64
+ Experimental:      false
+
+Server: Docker Engine - Community
+ Engine:
+  Version:          18.09.4
+  API version:      1.39 (minimum version 1.12)
+  Go version:       go1.10.8
+  Git commit:       d14af54
+  Built:            Wed Mar 27 18:04:46 2019
+  OS/Arch:          linux/amd64
+  Experimental:     false
