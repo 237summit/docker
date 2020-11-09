@@ -1,0 +1,32 @@
+
+## Kernel upgrade
+
+# yum -y update
+# yum -y install yum-plugin-fastestmirror
+
+# cat /etc/redhat-release
+# cat /etc/os-release
+
+# rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
+# rpm -Uvh http://www.elrepo.org/elrepo-release-7.0-2.el7.elrepo.noarch.rpm
+# yum repolist
+
+## Install new Kernel version##
+# yum --enablerepo=elrepo-kernel install kernel-ml
+
+##Configure Grub2 CentOS 7##
+# awk -F\' '$1=="menuentry " {print i++ " : " $2}' /etc/grub2.cfg
+# grub2-set-default 0
+# cat /boot/grub2/grubenv
+
+
+# cat << EOF > /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1# reboot
+# uname -a
+EOF
+# sysctl --system
+
+# reboot
+# uname -a
