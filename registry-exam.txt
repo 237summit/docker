@@ -1,0 +1,54 @@
+4. registry 클라이언트 인증에 사용할 인증서를 생성
+# openssl genrsa -out client-crt-key.key 2048
+# openssl req -x509 -new -nodes -key client-crt-key.key -days 10000 -out client-crt.crt
+
+5. nginx에서 사용할 인증서(server-nginx.crt)를 생성
+# openssl genrsa -out server-nginx.key 2048
+# openssl req -new -key server-nginx.key -out my-registry.csr
+<ENTER>
+Common Name (eg, your name or your server's hostname) []: master.example.com
+<ENTER>
+
+extfile.cnf 파일을 생성하여 인증서에 적용할 수 있는 도메인 리스트를 저장하고, 이를 인증서에 기록
+# echo subjectAltName = IP:10.100.0.104,IP:127.0.0.1,DNS:master.example.com > extfile.cnf
+# openssl x509 -req -in my-registry.csr -CA client-crt.crt -CAkey client-crt-key.key -CAcreateserial -out server-nginx.crt -days 10000 -extfile extfile.cnf
+
+6. 생성된 registry 키를 trust키로 등록
+# cp client-crt.crt /etc/pki/ca-trust/source/anchors/client-crt.pem
+# update-ca-trust
+
+7. 만약 docker데몬이 insecure-registries 방식으로 동작 중이라면 해제하고 docker 데몬을 다시 실행
+# mv /etc/docker/daemon.json /tmp
+# systemctl stop docker
+# systemctl start docker
+
+docker daemon restart 될 때 종료된 registry 컨테이너를 다시 실행
+# docker start registry
+
+8. nginx 컨테이너 실행하여 443번 포트로 서비스 되도록 구성
+# docker run -d -p 443:443 --link registry:registry -v /root/nginx_data:/etc/nginx/conf.d --name nginx nginx:1.9
+
+9. 계정 인증 TEST. docker.example.com 에 계정로그인 되는지 확인
+# docker login https://10.100.0.104
+# docker login https://master.example.com
+
+10. 컨테이너 이미지를 pull, push
+# docker tag busybox:latest master.example.com/busybox:v1
+
+11. 다른 호스트(nodeX.example.com)에서 컨테이너이미지를 업로드/다운로드 할 수 있도록 구성하자. 먼저 registry 인증서를 클라이언트에 전달한다.
+# scp client-crt.crt docker.example.com:~
+
+12. 클라이언트(nodeX.example.com)에서 컨테이너 업로드/다운로드 되는지 TEST 한다. 받은 인증서를 등록한다.
+docker# cp client-crt.crt /etc/pki/ca-trust/source/anchors/client-crt.pem
+docker# update-ca-trust
+
+이전에 docker데몬이 insecure-registries 방식으로 동작되었다면, 제거하고 docker 데몬을 다시실행한다.
+docker# mv /etc/docker/daemon.json /tmp
+docker# systemctl stop docker
+docker# systemctl start docker
+
+13. registry 서버에 로그인하고, 컨테이너 업로드/다운로드 진행해본다.
+docker# docker login https://master.example.com
+
+
+
