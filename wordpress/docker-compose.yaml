@@ -1,0 +1,18 @@
+webserver:
+  image: wordpress:4
+  restart: always
+  ports:
+    - "8080:80"
+  links:
+    - "mysql:mysql"
+  environment:
+    WORDPRESS_DB_PASSWORD: password
+
+mysql:
+  image: mysql:5.7
+  restart: always
+  volumes_from:
+    - dataonly
+  environment:
+    MYSQL_ROOT_PASSWORD: password
+
