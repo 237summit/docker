@@ -1,0 +1,18 @@
+[Docker] --memory 옵션을 줄 때 경고가 뜨는 경우
+$sudo docker run -dit --name master --cpu-shares 1024 --memory 10g stress:latest
+WARNING: Your kernel does not support swap limit capabilities or the cgroup is not mounted. Memory limited without swap. 
+        커널 설정의 문제로 swap에 대한 제한을 지원하지 않는다는 경고문구가 뜬다
+
+해결: kernel에서 swap제한 지원하도록 구성하기
+1) grub 파일 수정
+$ sudo vi /etc/default/grub
+GRUB_CMDLINE_LINUX_DEFAULT="cgroup_enable=memory swapaccount=1"
+
+$ sudo update-grub 
+2) 도커 시스템 리부팅
+
+
+
+
+
+
