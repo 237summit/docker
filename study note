@@ -1,4 +1,6 @@
-[Docker] --memory 옵션을 줄 때 경고가 뜨는 경우
+1. Your kernel does not support cgroup swap limit capabilities
+참고 : https://docs.docker.com/engine/install/linux-postinstall/#your-kernel-does-not-support-cgroup-swap-limit-capabilities
+
 $sudo docker run -dit --name master --cpu-shares 1024 --memory 10g stress:latest
 WARNING: Your kernel does not support swap limit capabilities or the cgroup is not mounted. Memory limited without swap. 
         커널 설정의 문제로 swap에 대한 제한을 지원하지 않는다는 경고문구가 뜬다
