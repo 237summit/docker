@@ -8,7 +8,7 @@ WARNING: Your kernel does not support swap limit capabilities or the cgroup is n
 해결: kernel에서 swap제한 지원하도록 구성하기
 1) grub 파일 수정
 $ sudo vi /etc/default/grub
-GRUB_CMDLINE_LINUX_DEFAULT="cgroup_enable=memory swapaccount=1"
+GRUB_CMDLINE_LINUX="cgroup_enable=memory swapaccount=1"
 
 $ sudo update-grub 
 2) 도커 시스템 리부팅
