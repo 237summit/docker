@@ -1,0 +1,53 @@
+간단하게 컨테이너 빌드하기
+Ubuntu 이미지 base에 apache, PHP를 연동하여 컨테이너를 빌드하시오.
+
+$ cat Dockerfile 
+FROM ubuntu:18.04
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+    && apt-get install -y apache2 \
+    && apt-get install -y software-properties-common \
+    && add-apt-repository ppa:ondrej/php \
+    && apt-get update \
+    && apt-get install -y php5.6
+
+EXPOSE 80
+CMD ["apachectl", "-DFOREGROUND"]
+
+==================================
+1. webserver 컨테이너 빌드하기
+$ mkdir webserver
+$ cd webserver
+
+2. Dockerfile 생성
+$ vim Dockerfile
+FROM centos:7
+RUN touch /etc/yum.repos.d/nginx.repo \
+    && echo -e '[nginx]\nname=nage repo\nbaseurl=http://nginx.org/packages/centos/7/$basearch/\ngpgcheck=0\nenabled=1' > /etc/yum.repos.d/nginx.repo
+RUN yum -y install nginx curl
+CMD ["nginx", "-g", "daemon off;"]
+
+
+3. 컨테이너 이미지 빌드 
+$ docker build -t myweb:20210622  .
+...
+Successfully tagged myweb:20210622
+
+
+4. 빌드 된 컨테이너 이미지 확인
+$ docker images
+REPOSITORY   TAG        IMAGE ID       CREATED          SIZE
+myweb        20210622   0bffae5d2f31   38 seconds ago   335MB
+
+
+5. 생성된 컨테이너 이미지를 이용해 웹서버 동작 시키기
+$ docker run -d --name webserver myweb:20210622
+$ curl 172.17.0.2
+
+
+6. 컨테이너 삭제하기
+$ docker ps
+ce0a4f2504bf   myweb:20210622   "nginx -g 'daemon of…"   About a minute ago   Up About a minute             webserver
+
+$ docker rm -f webserver
