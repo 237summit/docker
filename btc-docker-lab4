@@ -1,0 +1,46 @@
+애플리케이션 소스 코드를 포함한 컨테이너 빌드하기
+
+
+1. nodejs 애플리케이션 컨테이너 빌드하기
+$ mkdir appjs
+$ cd appjs/
+$ cat > app.js
+const http = require('http');
+const os = require('os');
+console.log("Test server starting…");
+var handler = function(req, res) {
+  res.writeHead(200);
+  res.end("Container Hostname: " + os.hostname() + "\n");
+};
+var www = http.createServer(handler);
+www.listen(8080);
+ 
+
+$ cat > Dockerfile
+FROM node:12
+COPY app.js /app.js
+ENTRYPOINT ["node", "app.js"]
+
+
+2. 컨테이너 빌드
+$ docker build -t appjs .
+
+
+3. 빌드 된 컨테이너 확인
+$ docker images
+REPOSITORY   TAG        IMAGE ID       CREATED          SIZE
+appjs        latest     12cfd448b8eb   21 seconds ago   918MB
+
+
+4. 빌드한 컨테이너 실행해보기
+$ docker run -d --name appjs appjs
+$ docker ps
+CONTAINER ID   IMAGE     COMMAND         CREATED         STATUS         PORTS     NAMES
+be999811a5d6   appjs     "node app.js"   5 seconds ago   Up 4 seconds             appjs
+
+$ curl 172.17.0.2:8080
+Container Hostname: be999811a5d6
+
+
+5. 실행되었던 컨테이너를 종료하자.
+$ docker rm -f appjs
