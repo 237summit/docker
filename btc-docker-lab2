@@ -1,0 +1,86 @@
+컨테이너 데이터 보존 실습
+
+
+TASK1: Docker Volume 기본사용
+
+1. Mysql 이미지를 다운로드하고 어떤 internal volume을 정의하였는지 살펴보자.
+# docker pull mysql 
+# docker inspect -f '{{ .Config.Volumes }}' mysql 
+map[/var/lib/mysql:{}]
+
+
+2. 컨테이너를 시작하고 Docker 데몬이 이미지 구성이 필요로 하는 볼륨을 생성하는지 확인하자.
+# docker run --name db -d -e MYSQL_ALLOW_EMPTY_PASSWORD=pass  mysql
+# docker volume ls
+
+
+3. 볼륨을 저장하고 있는 디렉터리를 확인하고 디렉터리의 내용을 살펴보자.
+# docker inspect db | grep -A10 Mounts 
+# ls -l /var/lib/docker/volumes/..……/_data/ 
+
+
+4. 컨테이너와 컨테이너 관련 볼륨을 삭제하자.
+# docker rm -fv db 
+
+
+5. Persistent external data volume을 갖는 컨테이너를 생성한다.
+# docker run --name data1 -ti -v /data busybox 
+/# df /data 
+/# echo "persistent data" > /data/file
+/# exit 
+
+
+6. 컨테이너를 다시 시작하고 볼륨의 데이터가 컨테이너 실행과 상관없이 영구적인지 확인한다.
+# docker start -i data1 
+/# ls /data 
+/# cat /data/file 
+/# exit 
+
+
+7. 데이터 볼륨에 위치한 파일을 호스트에서 바로 액세스한다.
+# cat /var/lib/docker/volumes/*/_data/file 
+
+
+8. Data1 컨테이너가 정의한 볼륨을 사용하는 다른 컨테이너를 시작한다.
+# docker run --name data2 --volumes-from data1 busybox cat /data/file 
+
+Data* 컨테이너들과 관련 볼륨을 제거한다.
+# docker rm -v data1 
+볼륨이 삭제되었나??
+
+# docker start -i data2 
+# docker rm -v data2 
+# docker volume ls 
+볼륨이 삭제되었나?
+
+
+작업 2: 개별 파일들을 볼륨으로 마운트하기
+1. 호스트의 개별 파일을 마운트하는 컨테이너를 시작하자.
+# touch /webapp/container_history 
+# docker run -ti --rm -v /webapp/container_history:/root/.bash_history ubuntu /bin/bash 
+/ # ls -l 
+/ # ps -ef 
+/ # exit 
+
+
+2. 다음 파일의 내용을 살펴보자.
+# cat /webapp/container_history 
+
+
+디바이스 마운트
+3. 호스트의 디스크 디바이스를 컨테이너에 읽기 전용 디바이스로 매핑한다.
+# docker run --rm -ti --device=/dev/vda:/dev/vdb:r  ubuntu 
+/ # ls -l /dev/vdb 
+/ # fdisk /dev/vdb 		
+/ # exit 
+
+
+4. 이번에는 호스트의 디스크 디바이스를 컨테이너에 읽기/쓰기 디바이스로 매핑한다.
+# docker run --rm -ti --device=/dev/vda:/dev/vdb:rw ubuntu 
+/ # ls -l /dev/vdb 
+/ # fdisk /dev/vdb
+...
+Command (m for help): q
+
+/ # exit 
+ 
