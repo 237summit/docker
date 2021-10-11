@@ -1,0 +1,193 @@
+컨테이너 관리 실습
+
+
+1. ubuntu 이미지를 다운받아 컨테이너로 실행한다.
+   -i : interactive mode로 STDIN을 오픈. command line interactive 지원 시 필수
+   -t : tty. pseudo-tty를 할당
+
+# docker run -it ubuntu  /bin/bash
+
+root@7c14df5dadd4:/# hostname
+
+root@7c14df5dadd4:/# cat /etc/resolv.conf
+
+
+
+2. 새로운 터미널을 실행하여 host에서 현재 실행중인 ubuntu 컨테이너를 확인한다.
+
+T2# cd /var/lib/docker/containers/7c14df5dadd4e80804570243dcf3d938b82a7b577.../
+T2# ls
+7c14df5...bc9dc99-json.log  config.v2.json   hostname  mounts       resolv.conf.hash
+checkpoints    hostconfig.json  hosts     resolv.conf
+
+
+T2# cat resolv.conf
+search example.com
+nameserver 10.100.0.254
+
+
+T2# cat hostname
+7c14df5dadd4
+
+
+
+3. 컨테이너 내부 탐색
+Process Namespace 격리확인
+
+root@7c14df5dadd4:/# ps
+  PID TTY          TIME CMD
+    1 pts/0    00:00:00 bash
+   13 pts/0    00:00:00 ps
+
+
+호스트이름은 컨테이너 ID가 된다.
+root@7c14df5dadd4:/# hostname
+7c14df5dadd4
+
+
+/etc/hosts 파일을 보면 호스트 엔트리도 추가되었다.
+root@7c14df5dadd4:/# cat /etc/hosts
+127.0.0.1      	localhost
+::1     		localhost ip6-localhost ip6-loopback
+fe00::0 		ip6-localnet
+ff00::0 		ip6-mcastprefix
+ff02::1 		ip6-allnodes
+ff02::2 		ip6-allrouters
+172.17.0.4      	7c14df5dadd4
+
+
+컨테이너 운영체제 정보 확인
+root@7c14df5dadd4:/# cat /etc/os-release
+NAME="Ubuntu"
+VERSION="18.04.1 LTS (Bionic Beaver)"
+
+
+설치 패키지 업데이트
+root@7c14df5dadd4:/# apt-get update
+
+root@7c14df5dadd4:/# apt-get install net-tools
+
+root@7c14df5dadd4:/# ifconfig
+eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 172.17.0.4  netmask 255.255.0.0  broadcast 172.17.255.255
+        ether 02:42:ac:11:00:04  txqueuelen 0  (Ethernet)
+
+root@7c14df5dadd4:/# apt-get install iproute2 -y
+
+root@7c14df5dadd4:/# ip addr
+18: eth0@if19: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default
+    link/ether 02:42:ac:11:00:03 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 172.17.0.4/16 brd 172.17.255.255 scope global eth0
+    ...
+  기본 네트워크로 172.17.0.1~ 시작되는 IP Address를 순차적으로 할당한다.
+
+
+
+4. 호스트 쪽에서 로그 확인 가능
+
+T2# tail -f 7c14df5dad....b82a7b577179516d02a242224bc9dc99-json.log
+
+root@7c14df5dadd4:/# apt-get install vim
+컨테이너에서 패키지를 설치하면 발생되는 로그정보가 출력됨
+
+
+
+5. 컨테이너에서 exit : 컨테이너 중지된다. 왜?
+
+root@7c14df5dadd4:/# exit
+
+
+로컬 호스트에서 확인
+# docker ps
+# docker ps -a
+
+가장 최근에 작업했던 컨테이너 만 확인
+# docker ps -l
+
+
+
+6. 컨테이너에서 변경된 파일 정보 확인 : docker diff ID  or  docker diff NAME
+# docker diff 7c14df5dadd4
+
+컨테이너 내부에서 있었던 작업내용을 출력 : docker logs ID or docker logs NAME
+# docker logs 7c14df5dadd4
+
+
+
+
+7. 컨테이너 네이밍
+- 이름 없이 컨테이너 생성하면 임시로 16HEX값으로 이름을 생성한다.
+  이름규칙: 영숫자, _, 마침표, -
+  이름은 컨테이너와 애플리케이션 사이의 논리적 연결을 인식하고 구축하는데 유용. 
+  의미가 있는 이름을 사용하는 것이 좋다(web, db 등). 동일이름의 컨테이너 생성 불가. 
+
+# docker run  --name c1 -it ubuntu /bin/bash
+root@134a9c098cfc:/# exit
+
+
+중지된 컨테이너 시작
+# docker start c1
+c1
+
+실행중인 컨테이너에 접속하기
+# docker attach c1
+root@134a9c098cfc:/# exit
+
+
+
+8. hub.docker.com에서 registry 검색 후 image 실행
+
+# docker search apache
+
+컨테이너 실행 시 백그라운드 모드(-d)로 동작. 데몬 컨테이너 실행 시 적용.
+# docker run -d --name web httpd:2.4
+
+# docker ps
+
+
+컨테이너 IP 확인
+# docker inspect web
+# curl http://172.17.0.X
+<html><body><h1>It works!</h1></body></html>
+
+컨테이너 내부에서 실행중인 프로세스 확인
+# docker top web
+
+
+
+9. 백그라운드에서 실행되는 컨테이너 STDOUT 확인
+
+# docker run --name test -d ubuntu /bin/sh -c "while true; do date; sleep 3; done"
+
+logs : 컨테이너의 로그를 가져온다. 
+# docker logs test
+# docker logs test -f		## 실시간조회
+# docker logs --tail 10  test	## 마지막 10개 라인만 출력
+
+
+
+10. 호스트에서 컨테이너 중지
+# docker stop web
+web
+
+ID로 종료
+# docker stop c585ef34b8d4
+c585ef34b8d4
+
+
+11. 컨테이너의 자세한 정보 얻기 : inspect
+# docker inspect test
+
+daemon_test 컨테이너의 inspect 항목 중 일부분만 출력
+# docker inspect --format='{{ .State.Running }}' test
+
+# docker inspect --format='{{ .NetworkSettings.IPAddress }}' test
+
+# vim ~/.bashrc
+...
+alias cip="docker inspect --format='{{ .NetworkSettings.IPAddress }}'"
+alias crm='docker rm -f $(docker ps -aq)'
+
+# source ~/.bashrc
+# alias
+# cip test
